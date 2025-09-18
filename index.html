@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Loan Affordability — Calculator (EMI / Loan modes)</title>
+<meta name="description" content="Enter income and preferences — test desired loan, desired EMI, or see your max affordable loan." />
+
+<style>
+:root{
+  --bg:#0b1220; --panel:#071426; --card:#0f1724;
+  --accent1:#7c3aed; --accent2:#06b6d4;
+  --muted:#94a3b8; --good:#10b981; --warn:#f59e0b; --bad:#ef4444;
+  --glass: rgba(255,255,255,0.02);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+}
+*{box-sizing:border-box}
+html,body{height:100%; margin:0; background:linear-gradient(180deg,#071024,#071426); color:#e6eef8}
+.wrap{max-width:1100px;margin:20px auto;padding:16px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.005));display:grid;grid-template-columns:1fr 420px;gap:14px}
+@media (max-width:980px){.wrap{grid-template-columns:1fr;padding:12px}}
+header{grid-column:1/-1;display:flex;gap:12px;align-items:center}
+.logo{width:52px;height:52px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent1),var(--accent2));font-weight:800;color:white;font-size:18px}
+h1{font-size:18px;margin:0}
+.lead{margin:0;color:var(--muted);font-size:13px}
+.card{background:linear-gradient(180deg,var(--card), rgba(255,255,255,0.01)); padding:14px;border-radius:12px}
+label{display:block;color:var(--muted);font-size:13px;margin-bottom:6px}
+input,select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:var(--glass);color:#e6eef8;font-size:14px}
+.row{display:flex;gap:10px}
+.small{width:120px}
+.muted-small{font-size:12px;color:var(--muted);margin-top:6px}
+.hint{font-size:13px;color:var(--muted)}
+.actions{display:flex;gap:8px;margin-top:12px}
+.btn{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:white;border:none;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:700}
+.btn.ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.04)}
+.visuals{padding:16px;border-radius:12px;display:flex;flex-direction:column;gap:12px}
+.card-title{font-size:13px;color:var(--muted);margin-bottom:6px}
+.result-box{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:12px; border-radius:10px}
+.big-num{font-size:20px;font-weight:800;color:white}
+.sub{font-size:13px;color:var(--muted);margin-top:6px}
+.progress-wrap{height:14px;width:100%;background:rgba(255,255,255,0.03);border-radius:999px;overflow:hidden;margin-top:8px}
+.progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent1),var(--accent2));transition:width 600ms}
+.status-pill{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:700;font-size:13px}
+.status-good{background:rgba(16,185,129,0.12);color:var(--good)}
+.status-warn{background:rgba(245,158,11,0.08);color:var(--warn)}
+.status-bad{background:rgba(239,68,68,0.06);color:var(--bad)}
+footer{grid-column:1/-1;text-align:center;font-size:12px;color:var(--muted);margin-top:6px}
+@media (max-width:560px){.small{width:100%} .big-num{font-size:22px}}
+@media (max-width:420px){
+  .btn{padding:12px 16px;font-size:15px}
+  .big-num{font-size:24px}
+}
+.mode-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.mode-row input[type="radio"]{margin-right:6px}
+</style>
+</head>
+<body>
+<main class="wrap" role="main" aria-labelledby="title">
+  <header>
+    <div class="logo">YV</div>
+    <div>
+      <h1 id="title">Loan Affordability Calculator</h1>
+      <p class="lead">Choose a mode: test a desired loan, test the EMI you want to pay, or see your max affordable loan.</p>
+    </div>
+  </header>
+
+  <!-- Inputs -->
+  <section class="card" aria-label="Inputs">
+    <div>
+      <label for="income">Net monthly income (₹) *</label>
+      <input id="income" inputmode="numeric" placeholder="e.g., 50000">
+
+      <div style="height:10px"></div>
+      <label for="existing">Existing monthly EMIs (₹)</label>
+      <input id="existing" inputmode="numeric" placeholder="e.g., 5000">
+
+      <div style="height:10px"></div>
+      <label for="essentials">Monthly essential expenses (₹)</label>
+      <input id="essentials" inputmode="numeric" placeholder="rent, groceries — e.g., 15000">
+
+      <div style="height:12px"></div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <div style="flex:1">
+          <label for="rate">Annual interest rate (%)</label>
+          <input id="rate" inputmode="decimal" placeholder="e.g., 10.5" value="10.5">
+          <div class="muted-small">Expected loan rate (annual)</div>
+        </div>
+        <div style="width:110px">
+          <label for="tenure">Tenure (months)</label>
+          <input id="tenure" class="small" inputmode="numeric" placeholder="e.g., 60" value="60">
+          <div class="muted-small">Months (60 = 5 years)</div>
+        </div>
+      </div>
+
+      <div style="height:12px"></div>
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1">
+          <label for="dti">DTI threshold (%)</label>
+          <input id="dti" inputmode="numeric" placeholder="e.g., 40" value="40">
+          <div class="muted-small">Debt-to-income limit (lenders often use 35–45%)</div>
+        </div>
+        <div style="width:110px">
+          <label for="buffer">Buffer (%)</label>
+          <input id="buffer" class="small" inputmode="numeric" placeholder="e.g., 10" value="10">
+          <div class="muted-small">Safety buffer (precaution)</div>
+        </div>
+      </div>
+
+      <div style="height:14px"></div>
+
+      <!-- Mode selector -->
+      <div class="mode-row" role="radiogroup" aria-label="Mode">
+        <label><input type="radio" name="mode" value="auto" checked> Show max loan (no inputs)</label>
+        <label><input type="radio" name="mode" value="loan"> I have a desired loan</label>
+        <label><input type="radio" name="mode" value="emi"> I will pay this EMI</label>
+      </div>
+
+      <div id="loanGroup" style="display:none;">
+        <label for="desired">Desired loan principal (₹)</label>
+        <input id="desired" inputmode="numeric" placeholder="e.g., 500000">
+      </div>
+
+      <div id="emiGroup" style="display:none;">
+        <label for="desiredEmi">Desired monthly EMI (₹)</label>
+        <input id="desiredEmi" inputmode="numeric" placeholder="e.g., 12000">
+        <div class="muted-small">If you pay this EMI for selected tenure, max loan ≈ shown</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="calc">Calculate</button>
+        <button class="btn ghost" id="reset">Reset</button>
+        <button class="btn ghost" id="shareBtn" title="Copy summary to clipboard">Share</button>
+      </div>
+
+      <div style="height:10px"></div>
+      <div class="hint">Tip: For conservative planning use DTI 30% and Buffer 15%.</div>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <aside class="visuals card" aria-label="Results">
+    <div>
+      <div class="card-title">Quick Result</div>
+      <div class="result-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div class="big-num" id="statusText">—</div>
+            <div class="sub" id="statusSub">Fill inputs and click Calculate</div>
+          </div>
+          <div id="statusPill" class="status-pill status-warn">Waiting</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card-title">Numbers</div>
+      <div class="result-box" style="display:grid;gap:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:13px;color:var(--muted)">Max affordable EMI</div>
+            <div class="big-num" id="maxEmi">—</div>
+          </div>
+          <div>
+            <div style="font-size:13px;color:var(--muted)">EMI (desired / computed)</div>
+            <div class="big-num" id="proposedEmi">—</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:13px;color:var(--muted)">Max affordable loan</div>
+            <div class="big-num" id="maxLoan">—</div>
+          </div>
+          <div>
+            <div style="font-size:13px;color:var(--muted)">Shortfall / Extra capacity</div>
+            <div class="big-num" id="shortfall">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card-title">Debt-to-Income (DTI)</div>
+      <div class="result-box">
+        <div style="display:flex;flex-direction:column;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:13px;color:var(--muted)">DTI (%)</div>
+            <div style="font-size:13px;color:var(--muted)">Allowed: <strong id="allowedDti">—</strong></div>
+          </div>
+          <div class="progress-wrap" style="margin-top:8px">
+            <div id="dtibar" class="progress-bar" style="width:0%"></div>
+          </div>
+          <div class="progress-text" id="dtiText">—</div>
+        </div>
+        <div style="height:10px"></div>
+        <div class="hint">Lower DTI → less risk & better loan terms.</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card-title">Payoff & Advice</div>
+      <div class="result-box" id="recommendBox">
+        <div id="recText" class="sub">—</div>
+        <div style="height:8px"></div>
+        <div id="payoffInfo" class="muted-small">—</div>
+      </div>
+    </div>
+
+    <footer>Built for your reels & toolset · Use responsibly · Indicative results only</footer>
+  </aside>
+</main>
+
+<script>
+// helpers
+const qs = id => document.getElementById(id);
+const fmt = v => '₹' + Number(v).toLocaleString('en-IN', {maximumFractionDigits: 0});
+function toNum(v){ if(v===undefined||v===null) return 0; const s=String(v).replace(/[,\s₹]/g,'').trim(); const n=parseFloat(s); return isNaN(n)?0:n; }
+
+// formulas
+function calcEMI(P, monthlyRate, n){
+  if(n<=0) return 0;
+  if(monthlyRate<=0) return P/n;
+  const r = monthlyRate;
+  const pow = Math.pow(1+r,n);
+  return P * r * pow / (pow - 1);
+}
+function maxLoanFromEmi(emi, monthlyRate, n){
+  if(n<=0) return 0;
+  if(monthlyRate<=0) return emi * n;
+  const r = monthlyRate;
+  const pow = Math.pow(1+r,n);
+  return emi * ((pow - 1) / (r * pow));
+}
+function monthsToRepay(P, monthlyRate, emiCap){
+  if(emiCap<=0) return Infinity;
+  if(monthlyRate<=0) return P/emiCap;
+  const r = monthlyRate;
+  const denom = (emiCap - P * r);
+  if(denom <= 0) return Infinity;
+  const left = emiCap / denom;
+  if(left <= 1) return Infinity;
+  const n = Math.log(left) / Math.log(1 + r);
+  return n;
+}
+
+// UI mode switching
+function setModeUI(mode){
+  qs('loanGroup').style.display = mode==='loan' ? '' : 'none';
+  qs('emiGroup').style.display = mode==='emi' ? '' : 'none';
+}
+document.querySelectorAll('input[name="mode"]').forEach(r=>{
+  r.addEventListener('change', ()=> setModeUI(document.querySelector('input[name="mode"]:checked').value));
+});
+
+// main calculate (supports three flows)
+function calculate(){
+  const income = toNum(qs('income').value);
+  const existing = toNum(qs('existing').value);
+  const essentials = toNum(qs('essentials').value);
+  const annualRate = toNum(qs('rate').value) || 0;
+  const tenure = Math.max(1, Math.floor(toNum(qs('tenure').value) || 0));
+  const dtiPct = Math.max(1, Math.min(90, toNum(qs('dti').value) || 40));
+  const bufferPct = Math.max(0, Math.min(80, toNum(qs('buffer').value) || 10));
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  const desiredLoan = toNum(qs('desired').value);
+  const desiredEmi = toNum(qs('desiredEmi').value);
+
+  if(income <= 0){ alert('Enter monthly income (e.g., 30000).'); return; }
+  if(tenure <= 0){ alert('Enter tenure (months).'); return; }
+
+  const monthlyRate = annualRate/12/100;
+  const allowedDTI = income * (dtiPct/100);
+  const allowedEmi = Math.max(0, allowedDTI - existing);
+  const allowedAfterBuffer = allowedEmi * (1 - bufferPct/100);
+  const maxLoan = maxLoanFromEmi(allowedAfterBuffer, monthlyRate, tenure);
+  const maxEmi = allowedAfterBuffer;
+
+  // outputs we'll fill
+  let proposedEmi = 0;
+  let displayLoan = 0;
+  let desiredIsAffordable = null;
+  let payoffMonthsIfPayMaxEmi = null;
+  let additionalIncomeNeededMonthly = 0;
+
+  if(mode === 'loan' && desiredLoan > 0){
+    proposedEmi = calcEMI(desiredLoan, monthlyRate, tenure);
+    displayLoan = desiredLoan;
+    desiredIsAffordable = (maxEmi >= proposedEmi && maxEmi > 0);
+    if(desiredIsAffordable){
+      payoffMonthsIfPayMaxEmi = monthsToRepay(desiredLoan, monthlyRate, maxEmi);
+    } else {
+      const nonBuffer = Math.max(0.0001, 1 - bufferPct/100);
+      const incomeNeeded = ((proposedEmi / nonBuffer) + existing) * (100 / dtiPct);
+      additionalIncomeNeededMonthly = Math.max(0, Math.ceil(incomeNeeded - income));
+    }
+  } else if(mode === 'emi' && desiredEmi > 0){
+    proposedEmi = desiredEmi;
+    displayLoan = maxLoanFromEmi(desiredEmi, monthlyRate, tenure);
+    desiredIsAffordable = (desiredEmi <= maxEmi);
+    if(desiredIsAffordable){
+      payoffMonthsIfPayMaxEmi = tenure;
+    } else {
+      const nonBuffer = Math.max(0.0001, 1 - bufferPct/100);
+      const incomeNeeded = ((desiredEmi / nonBuffer) + existing) * (100 / dtiPct);
+      additionalIncomeNeededMonthly = Math.max(0, Math.ceil(incomeNeeded - income));
+    }
+  } else {
+    proposedEmi = calcEMI(maxLoan, monthlyRate, tenure);
+    displayLoan = maxLoan;
+    desiredIsAffordable = true;
+    payoffMonthsIfPayMaxEmi = tenure;
+  }
+
+  // dti actual (based on proposedEmi+existing)
+  const totalDebt = existing + proposedEmi;
+  const dtiNow = income > 0 ? (totalDebt / income) * 100 : 0;
+
+  // update UI
+  qs('maxEmi').textContent = maxEmi>0? fmt(maxEmi) : '—';
+  qs('proposedEmi').textContent = proposedEmi>0? fmt(proposedEmi) : '—';
+  qs('maxLoan').textContent = maxLoan>0? fmt(maxLoan) : '—';
+  qs('allowedDti').textContent = dtiPct + '%';
+  qs('dtiText').textContent = dtiNow.toFixed(1) + '% used';
+  qs('dtibar').style.width = Math.min(100, dtiNow) + '%';
+
+  let shortfallText = '—';
+  if(mode==='loan'){
+    if(desiredIsAffordable) shortfallText = 'Affordable';
+    else shortfallText = '+ Income ' + fmt(additionalIncomeNeededMonthly);
+  }
+  else if(mode==='emi'){
+    if(desiredIsAffordable) shortfallText = 'None';
+    else shortfallText = '+ Income ' + fmt(additionalIncomeNeededMonthly);
+  }
+  else {
+    shortfallText = '—';
+  }
+  qs('shortfall').textContent = shortfallText;
+
+  if(desiredIsAffordable){
+    qs('statusPill').className = 'status-pill status-good';
+    qs('statusPill').textContent = 'Affordable';
+    qs('statusText').textContent = 'OK';
+    qs('statusSub').textContent = 'Loan / EMI fits your profile';
+    if(payoffMonthsIfPayMaxEmi && payoffMonthsIfPayMaxEmi!==Infinity){
+      qs('payoffInfo').textContent = 'Paying at max affordable EMI, loan clears in ~' + Math.round(payoffMonthsIfPayMaxEmi) + ' months.';
+    } else {
+      qs('payoffInfo').textContent = 'Payoff period could not be calculated.';
+    }
+    qs('recText').textContent = 'You are within safe DTI limits.';
+  } else {
+    qs('statusPill').className = 'status-pill status-bad';
+    qs('statusPill').textContent = 'Too high';
+    qs('statusText').textContent = 'Not OK';
+    qs('statusSub').textContent = 'Desired loan/EMI exceeds your limit';
+    qs('recText').textContent = 'Reduce loan size or increase tenure.';
+    qs('payoffInfo').textContent = 'Shortfall means EMI not affordable.';
+  }
+}
+
+qs('calc').addEventListener('click', calculate);
+qs('reset').addEventListener('click', ()=>{document.querySelectorAll('input').forEach(i=>{if(i.type!=='radio')i.value='';}); qs('rate').value=10.5; qs('tenure').value=60; qs('dti').value=40; qs('buffer').value=10; setModeUI('auto'); qs('statusText').textContent='—'; qs('statusSub').textContent='Fill inputs and click Calculate'; qs('statusPill').className='status-pill status-warn'; qs('statusPill').textContent='Waiting'; qs('maxEmi').textContent=qs('proposedEmi').textContent=qs('maxLoan').textContent=qs('shortfall').textContent=qs('allowedDti').textContent=qs('dtiText').textContent=qs('payoffInfo').textContent=qs('recText').textContent='—'; qs('dtibar').style.width='0%';});
+qs('shareBtn').addEventListener('click', ()=>{const t=qs('statusText').textContent; const emi=qs('proposedEmi').textContent; const loan=qs('maxLoan').textContent; const dti=qs('dtiText').textContent; const msg=`Status: ${t}\nEMI: ${emi}\nLoan: ${loan}\n${dti}`; navigator.clipboard.writeText(msg).then(()=>alert('Summary copied to clipboard'));});
+
+</script>
+</body>
+</html>
